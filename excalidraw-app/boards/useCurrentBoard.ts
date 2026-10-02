@@ -2,7 +2,11 @@ import { isTestEnv } from "@excalidraw/common";
 import { useCallback, useEffect, useState } from "react";
 
 import { createBoard, listBoards } from "../api/boards";
-import { getBoardIdFromUrl, setBoardIdInUrl } from "../data/remoteStore";
+import {
+  getBoardIdFromUrl,
+  setBoardIdInUrl,
+  setCurrentBoardId,
+} from "../data/remoteStore";
 
 import type { Board } from "../api/boards";
 
@@ -16,6 +20,7 @@ export const useCurrentBoard = () => {
 
   const openBoard = useCallback((next: Board) => {
     setBoardIdInUrl(next.id);
+    setCurrentBoardId(next.id);
     setBoard(next);
   }, []);
 
@@ -33,6 +38,7 @@ export const useCurrentBoard = () => {
         const boards = await listBoards();
         const match = boards.find((b) => b.id === urlId);
         if (match) {
+          setCurrentBoardId(match.id);
           setBoard(match);
           return;
         }

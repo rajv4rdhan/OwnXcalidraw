@@ -1043,9 +1043,11 @@ const ExcalidrawWrapper = () => {
         theme={editorTheme}
         onThemeChange={setAppTheme}
         renderTopRightUI={(isMobile) => {
-          if (isMobile || !collabAPI || isCollabDisabled) {
+          if (isMobile) {
             return null;
           }
+
+          const collabAllowed = collabAPI && !isCollabDisabled;
 
           return (
             <div className="excalidraw-ui-top-right">
@@ -1057,20 +1059,27 @@ const ExcalidrawWrapper = () => {
                 {board?.name ?? "Boards"}
               </button>
 
-              {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
-                <ExcalidrawPlusPromoBanner
-                  isSignedIn={isExcalidrawPlusSignedUser}
-                />
-              )}
+              {collabAllowed && (
+                <>
+                  {excalidrawAPI?.getEditorInterface().formFactor ===
+                    "desktop" && (
+                    <ExcalidrawPlusPromoBanner
+                      isSignedIn={isExcalidrawPlusSignedUser}
+                    />
+                  )}
 
-              {collabError.message && <CollabError collabError={collabError} />}
-              <LiveCollaborationTrigger
-                isCollaborating={isCollaborating}
-                onSelect={() =>
-                  setShareDialogState({ isOpen: true, type: "share" })
-                }
-                editorInterface={editorInterface}
-              />
+                  {collabError.message && (
+                    <CollabError collabError={collabError} />
+                  )}
+                  <LiveCollaborationTrigger
+                    isCollaborating={isCollaborating}
+                    onSelect={() =>
+                      setShareDialogState({ isOpen: true, type: "share" })
+                    }
+                    editorInterface={editorInterface}
+                  />
+                </>
+              )}
             </div>
           );
         }}
@@ -1091,6 +1100,7 @@ const ExcalidrawWrapper = () => {
           isCollabEnabled={!isCollabDisabled}
           theme={appTheme}
           refresh={() => forceRefresh((prev) => !prev)}
+          onOpenBoards={() => setBoardPickerOpen(true)}
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
@@ -1182,6 +1192,23 @@ const ExcalidrawWrapper = () => {
 
         <CommandPalette
           customCommandPaletteItems={[
+            {
+              label: "Boards",
+              category: DEFAULT_CATEGORIES.app,
+              icon: <div style={{ width: 14 }}>{ExcalLogo}</div>,
+              predicate: true,
+              keywords: [
+                "boards",
+                "documents",
+                "canvas",
+                "switch",
+                "new",
+                "files",
+              ],
+              perform: () => {
+                setBoardPickerOpen(true);
+              },
+            },
             {
               label: t("labels.liveCollaboration"),
               category: DEFAULT_CATEGORIES.app,

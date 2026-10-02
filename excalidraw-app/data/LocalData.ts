@@ -14,8 +14,12 @@ import { clearAppStateForLocalStorage } from "@excalidraw/excalidraw/appState";
 import {
   CANVAS_SEARCH_TAB,
   DEFAULT_SIDEBAR,
+  MIME_TYPES,
   debounce,
 } from "@excalidraw/common";
+
+import { uploadFile, fileDownloadUrl } from "../api/files";
+import { getCurrentBoardId } from "./remoteStore";
 import {
   createStore,
   entries,
@@ -47,6 +51,52 @@ import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
 
 const filesStore = createStore("files-db", "files-store");
+
+/** Decodes a `data:` URL into raw bytes. */
+const dataURLToBytes = (dataURL: string): Uint8Array => {
+  const base64 = dataURL.split(",")[1] ?? "";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+};
+
+const blobToDataURL = (blob: Blob): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+
+/** Fetches a single file from the board's remote storage. */
+const fetchRemoteFile = async (
+  boardId: string,
+  id: FileId,
+): Promise<BinaryFileData | null> => {
+  try {
+    const response = await fetch(fileDownloadUrl(boardId, id), {
+      credentials: "same-origin",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    const blob = await response.blob();
+    const dataURL = await blobToDataURL(blob);
+    return {
+      id,
+      dataURL: dataURL as BinaryFileData["dataURL"],
+      mimeType: (blob.type || MIME_TYPES.binary) as BinaryFileData["mimeType"],
+      created: Date.now(),
+      lastRetrieved: Date.now(),
+    };
+  } catch (error) {
+    console.warn("failed to fetch remote file", id, error);
+    return null;
+  }
+};
 
 export const localStorageQuotaExceededAtom = atom(false);
 
@@ -168,38 +218,71 @@ export class LocalData {
 
   static fileStorage = new LocalFileManager({
     onFileStatusChange: FileStatusStore.updateStatuses.bind(FileStatusStore),
-    getFiles(ids) {
-      return getMany(ids, filesStore).then(
-        async (filesData: (BinaryFileData | undefined)[]) => {
-          const loadedFiles: BinaryFileData[] = [];
-          const erroredFiles = new Map<FileId, true>();
+    async getFiles(ids) {
+      const filesData = await getMany(ids, filesStore);
+      const loadedFiles: BinaryFileData[] = [];
+      const erroredFiles = new Map<FileId, true>();
+      const filesToSave: [FileId, BinaryFileData][] = [];
+      const missing: FileId[] = [];
 
-          const filesToSave: [FileId, BinaryFileData][] = [];
+      const localFiles: BinaryFileData[] = [];
 
-          filesData.forEach((data, index) => {
-            const id = ids[index];
-            if (data) {
-              const _data: BinaryFileData = {
-                ...data,
-                lastRetrieved: Date.now(),
-              };
-              filesToSave.push([id, _data]);
-              loadedFiles.push(_data);
-            } else {
-              erroredFiles.set(id, true);
-            }
-          });
+      filesData.forEach((data, index) => {
+        const id = ids[index];
+        if (data) {
+          const _data: BinaryFileData = { ...data, lastRetrieved: Date.now() };
+          filesToSave.push([id, _data]);
+          loadedFiles.push(_data);
+          localFiles.push(_data);
+        } else {
+          missing.push(id);
+        }
+      });
 
-          try {
-            // save loaded files back to storage with updated `lastRetrieved`
-            setMany(filesToSave, filesStore);
-          } catch (error) {
-            console.warn(error);
+      // Fall back to remote storage for files not cached locally (e.g. opened
+      // on a different device).
+      const boardId = getCurrentBoardId();
+      if (boardId && missing.length) {
+        const remote = await Promise.all(
+          missing.map((id) => fetchRemoteFile(boardId, id)),
+        );
+        for (const file of remote) {
+          if (file) {
+            loadedFiles.push(file);
+            filesToSave.push([file.id, file]);
           }
+        }
+      }
 
-          return { loadedFiles, erroredFiles };
-        },
-      );
+      // Mirror locally-cached files that predate remote sync (best-effort,
+      // fire-and-forget so image rendering isn't blocked).
+      if (boardId) {
+        for (const file of localFiles) {
+          void uploadFile(
+            boardId,
+            file.id,
+            dataURLToBytes(file.dataURL),
+            file.mimeType,
+          ).catch((error) =>
+            console.warn("failed to mirror file to remote storage", file.id, error),
+          );
+        }
+      }
+
+      try {
+        // save loaded files back to storage with updated `lastRetrieved`
+        await setMany(filesToSave, filesStore);
+      } catch (error) {
+        console.warn(error);
+      }
+
+      for (const id of ids) {
+        if (!loadedFiles.some((file) => file.id === id)) {
+          erroredFiles.set(id, true);
+        }
+      }
+
+      return { loadedFiles, erroredFiles };
     },
     async saveFiles({ addedFiles }) {
       const savedFiles = new Map<FileId, BinaryFileData>();
@@ -210,6 +293,8 @@ export class LocalData {
       // before an IDB write finishes will read the latest value.
       updateBrowserStateVersion(STORAGE_KEYS.VERSION_FILES);
 
+      const boardId = getCurrentBoardId();
+
       await Promise.all(
         [...addedFiles].map(async ([id, fileData]) => {
           try {
@@ -218,6 +303,21 @@ export class LocalData {
           } catch (error: any) {
             console.error(error);
             erroredFiles.set(id, fileData);
+            return;
+          }
+
+          // Mirror to remote storage so images are available across devices.
+          if (boardId) {
+            try {
+              await uploadFile(
+                boardId,
+                id,
+                dataURLToBytes(fileData.dataURL),
+                fileData.mimeType,
+              );
+            } catch (error) {
+              console.warn("failed to upload file to remote storage", id, error);
+            }
           }
         }),
       );
