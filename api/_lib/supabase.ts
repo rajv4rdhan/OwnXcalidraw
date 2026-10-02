@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { readSupabaseEnv } from "./env.ts";
+import { readSupabaseEnv } from "./env";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 

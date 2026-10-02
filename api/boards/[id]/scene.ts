@@ -1,13 +1,13 @@
-import { rejectUnauthenticated } from "../../_lib/auth.ts";
+import { rejectUnauthenticated } from "../../_lib/auth";
 import {
   collectFileIds,
   garbageCollectFiles,
   getScene,
   isUuid,
   pruneDeletedElements,
-} from "../../_lib/boards.ts";
-import { getSupabase } from "../../_lib/supabase.ts";
-import { readJsonBody, rejectMethod, sendJson, withErrors } from "../../_lib/http.ts";
+} from "../../_lib/boards";
+import { getSupabase } from "../../_lib/supabase";
+import { readJsonBody, rejectMethod, sendJson, withErrors } from "../../_lib/http";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 

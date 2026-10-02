@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { readAuthEnv } from "./env.ts";
-import { sendJson } from "./http.ts";
+import { readAuthEnv } from "./env";
+import { sendJson } from "./http";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 

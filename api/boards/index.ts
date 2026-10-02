@@ -1,10 +1,10 @@
-import { rejectUnauthenticated } from "../_lib/auth.ts";
+import { rejectUnauthenticated } from "../_lib/auth";
 import {
   createBoard,
   listBoards,
   reapOrphanBoardStorage,
-} from "../_lib/boards.ts";
-import { readJsonBody, rejectMethod, sendJson, withErrors } from "../_lib/http.ts";
+} from "../_lib/boards";
+import { readJsonBody, rejectMethod, sendJson, withErrors } from "../_lib/http";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 

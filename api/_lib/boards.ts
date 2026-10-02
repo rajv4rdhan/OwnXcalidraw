@@ -1,5 +1,5 @@
-import { readSupabaseEnv } from "./env.ts";
-import { getSupabase } from "./supabase.ts";
+import { readSupabaseEnv } from "./env";
+import { getSupabase } from "./supabase";
 
 /**
  * How long an unreferenced file is kept before being deleted. Protects

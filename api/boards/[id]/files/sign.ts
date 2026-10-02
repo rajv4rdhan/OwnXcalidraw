@@ -1,8 +1,8 @@
-import { rejectUnauthenticated } from "../../../_lib/auth.ts";
-import { isUuid } from "../../../_lib/boards.ts";
-import { readSupabaseEnv } from "../../../_lib/env.ts";
-import { getSupabase } from "../../../_lib/supabase.ts";
-import { readJsonBody, rejectMethod, sendJson, withErrors } from "../../../_lib/http.ts";
+import { rejectUnauthenticated } from "../../../_lib/auth";
+import { isUuid } from "../../../_lib/boards";
+import { readSupabaseEnv } from "../../../_lib/env";
+import { getSupabase } from "../../../_lib/supabase";
+import { readJsonBody, rejectMethod, sendJson, withErrors } from "../../../_lib/http";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 

@@ -1,5 +1,5 @@
-import { isAuthenticated } from "./_lib/auth.ts";
-import { sendJson, withErrors, rejectMethod } from "./_lib/http.ts";
+import { isAuthenticated } from "./_lib/auth";
+import { sendJson, withErrors, rejectMethod } from "./_lib/http";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 

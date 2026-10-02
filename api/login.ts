@@ -1,7 +1,7 @@
-import { readAuthEnv } from "./_lib/env.ts";
-import { safeEqual, setSessionCookie } from "./_lib/auth.ts";
-import { rejectMethod, readJsonBody, sendJson, withErrors } from "./_lib/http.ts";
-import { isRateLimited } from "./_lib/rate-limit.ts";
+import { readAuthEnv } from "./_lib/env";
+import { safeEqual, setSessionCookie } from "./_lib/auth";
+import { rejectMethod, readJsonBody, sendJson, withErrors } from "./_lib/http";
+import { isRateLimited } from "./_lib/rate-limit";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 

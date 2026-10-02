@@ -1,5 +1,5 @@
-import { clearSessionCookie } from "./_lib/auth.ts";
-import { rejectMethod, sendJson, withErrors } from "./_lib/http.ts";
+import { clearSessionCookie } from "./_lib/auth";
+import { rejectMethod, sendJson, withErrors } from "./_lib/http";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
