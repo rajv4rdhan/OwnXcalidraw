@@ -47,6 +47,11 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     .single();
 
   if (error) {
+    // The board was deleted (or never existed) — stale client save.
+    if ((error as { code?: string }).code === "23503") {
+      sendJson(res, 404, { error: "board_not_found" });
+      return;
+    }
     throw error;
   }
 

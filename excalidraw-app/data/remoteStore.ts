@@ -62,41 +62,55 @@ export const setCurrentBoardId = (boardId: string | null) => {
 export const getCurrentBoardId = () => currentBoardId;
 
 const pushScene = async (
+  boardId: string | null,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
   files: BinaryFiles,
 ) => {
-  if (!currentBoardId) {
+  if (!boardId) {
     return;
   }
-  const payload = serializeAsJSON(elements, appState, files, "database");
-  await saveScene(currentBoardId, {
-    elements: JSON.parse(payload).elements ?? [],
-    appState: JSON.parse(payload).appState ?? {},
-    version: Date.now(),
-  });
+  try {
+    const payload = serializeAsJSON(elements, appState, files, "database");
+    await saveScene(boardId, {
+      elements: JSON.parse(payload).elements ?? [],
+      appState: JSON.parse(payload).appState ?? {},
+      version: Date.now(),
+    });
+  } catch (error) {
+    // Never let a stale/background save surface as an unhandled rejection.
+    console.warn("remote scene save failed", boardId, error);
+  }
 };
 
 const debouncedPush = debounce(pushScene, SAVE_TO_REMOTE_TIMEOUT);
 
-/** Schedules a debounced remote save of the current scene. */
+/**
+ * Schedules a debounced remote save. The board id is captured now (not read
+ * when the debounce fires) so a pending save can never land on a different
+ * board after switching.
+ */
 export const scheduleRemoteSave = (
   elements: readonly ExcalidrawElement[],
   appState: AppState,
   files: BinaryFiles,
 ) => {
-  debouncedPush(elements, appState, files);
+  debouncedPush(getCurrentBoardId(), elements, appState, files);
 };
 
 export const flushRemoteSave = () => debouncedPush.flush();
 
-/** Awaits an immediate remote save of the current board. */
+/** Discards any pending debounced save (e.g. while switching boards). */
+export const cancelRemoteSave = () => debouncedPush.cancel();
+
+/** Awaits an immediate remote save of the given board. */
 export const saveSceneNow = async (
+  boardId: string | null,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
   files: BinaryFiles,
 ) => {
-  await pushScene(elements, appState, files);
+  await pushScene(boardId, elements, appState, files);
 };
 
 export type { FileId };

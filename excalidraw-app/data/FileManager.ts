@@ -51,7 +51,10 @@ export class FileManager {
       loadedFiles: BinaryFileData[];
       erroredFiles: Map<FileId, true>;
     }>;
-    saveFiles: (data: { addedFiles: Map<FileId, BinaryFileData> }) => Promise<{
+    saveFiles: (
+      data: { addedFiles: Map<FileId, BinaryFileData> },
+      boardId?: string | null,
+    ) => Promise<{
       savedFiles: Map<FileId, BinaryFileData>;
       erroredFiles: Map<FileId, BinaryFileData>;
     }>;
@@ -89,13 +92,16 @@ export class FileManager {
     return file.version ?? 1;
   };
 
-  saveFiles = async ({
-    elements,
-    files,
-  }: {
-    elements: readonly ExcalidrawElement[];
-    files: BinaryFiles;
-  }) => {
+  saveFiles = async (
+    {
+      elements,
+      files,
+    }: {
+      elements: readonly ExcalidrawElement[];
+      files: BinaryFiles;
+    },
+    boardId: string | null = null,
+  ) => {
     const addedFiles: Map<FileId, BinaryFileData> = new Map();
 
     for (const element of elements) {
@@ -113,9 +119,10 @@ export class FileManager {
     }
 
     try {
-      const { savedFiles, erroredFiles } = await this._saveFiles({
-        addedFiles,
-      });
+      const { savedFiles, erroredFiles } = await this._saveFiles(
+        { addedFiles },
+        boardId,
+      );
 
       for (const [fileId, fileData] of savedFiles) {
         this.savedFiles.set(fileId, this.getFileVersion(fileData));

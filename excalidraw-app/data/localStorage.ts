@@ -12,12 +12,15 @@ import { STORAGE_KEYS } from "../app_constants";
  * Scene data is cached per board so switching boards never shows another
  * board's drawing. Without a board, the legacy global keys are used.
  */
+// Bump to invalidate previously cached (possibly cross-contaminated) scenes.
+const CACHE_VERSION = "v2";
+
 export const getScopedStorageKeys = (boardId?: string | null) => ({
   elements: boardId
-    ? `${STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS}:${boardId}`
+    ? `${STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS}:${CACHE_VERSION}:${boardId}`
     : STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,
   appState: boardId
-    ? `${STORAGE_KEYS.LOCAL_STORAGE_APP_STATE}:${boardId}`
+    ? `${STORAGE_KEYS.LOCAL_STORAGE_APP_STATE}:${CACHE_VERSION}:${boardId}`
     : STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
 });
 

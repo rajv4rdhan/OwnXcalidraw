@@ -16,10 +16,12 @@ import "./BoardPicker.scss";
 export const BoardPicker = ({
   currentBoardId,
   onSelect,
+  onDeleted,
   onClose,
 }: {
   currentBoardId: string | null;
   onSelect: (board: Board) => void;
+  onDeleted: (boardId: string) => void;
   onClose: () => void;
 }) => {
   const [boards, setBoards] = useState<Board[]>([]);
@@ -66,6 +68,7 @@ export const BoardPicker = ({
       localStorage.removeItem(elements);
       localStorage.removeItem(appState);
       setBoards((prev) => prev.filter((b) => b.id !== board.id));
+      onDeleted(board.id);
     } finally {
       setBusy(false);
     }

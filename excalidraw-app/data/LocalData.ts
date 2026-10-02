@@ -124,6 +124,7 @@ class LocalFileManager extends FileManager {
 const saveDataStateToLocalStorage = (
   elements: readonly ExcalidrawElement[],
   appState: AppState,
+  boardId: string | null,
 ) => {
   const localStorageQuotaExceeded = appJotaiStore.get(
     localStorageQuotaExceededAtom,
@@ -139,7 +140,7 @@ const saveDataStateToLocalStorage = (
     }
 
     const { elements: elementsKey, appState: appStateKey } =
-      getScopedStorageKeys(getCurrentBoardId());
+      getScopedStorageKeys(boardId);
 
     localStorage.setItem(
       elementsKey,
@@ -171,14 +172,12 @@ export class LocalData {
       elements: readonly ExcalidrawElement[],
       appState: AppState,
       files: BinaryFiles,
+      boardId: string | null,
       onFilesSaved: () => void,
     ) => {
-      saveDataStateToLocalStorage(elements, appState);
+      saveDataStateToLocalStorage(elements, appState, boardId);
 
-      await this.fileStorage.saveFiles({
-        elements,
-        files,
-      });
+      await this.fileStorage.saveFiles({ elements, files }, boardId);
       onFilesSaved();
     },
     SAVE_TO_LOCAL_STORAGE_TIMEOUT,
@@ -193,7 +192,9 @@ export class LocalData {
   ) => {
     // we need to make the `isSavePaused` check synchronously (undebounced)
     if (!this.isSavePaused()) {
-      this._save(elements, appState, files, onFilesSaved);
+      // Capture the board id now so a pending debounced save always targets
+      // the board it was created for.
+      this._save(elements, appState, files, getCurrentBoardId(), onFilesSaved);
     }
   };
 
@@ -285,7 +286,7 @@ export class LocalData {
 
       return { loadedFiles, erroredFiles };
     },
-    async saveFiles({ addedFiles }) {
+    async saveFiles({ addedFiles }, boardId) {
       const savedFiles = new Map<FileId, BinaryFileData>();
       const erroredFiles = new Map<FileId, BinaryFileData>();
 
@@ -293,8 +294,6 @@ export class LocalData {
       // optimistically. Hopefully nothing fails, and an IDB read executed
       // before an IDB write finishes will read the latest value.
       updateBrowserStateVersion(STORAGE_KEYS.VERSION_FILES);
-
-      const boardId = getCurrentBoardId();
 
       await Promise.all(
         [...addedFiles].map(async ([id, fileData]) => {

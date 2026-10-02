@@ -139,6 +139,7 @@ import { AIComponents } from "./components/AI";
 import { BoardPicker } from "./boards/BoardPicker";
 import { useCurrentBoard } from "./boards/useCurrentBoard";
 import {
+  cancelRemoteSave,
   flushRemoteSave,
   loadRemoteScene,
   saveSceneNow,
@@ -413,6 +414,10 @@ const ExcalidrawWrapper = () => {
   }
 
   const debugCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // While switching boards we stop persisting: the page is about to reload
+  // and any in-flight save could otherwise be tagged with the new board.
+  const switchingBoardRef = useRef(false);
 
   useEffect(() => {
     trackEvent("load", "frame", getFrame());
@@ -761,6 +766,12 @@ const ExcalidrawWrapper = () => {
       collabAPI.syncElements(elements);
     }
 
+    // Don't persist while switching boards — the page is reloading and any
+    // save here could be written under the wrong board.
+    if (switchingBoardRef.current) {
+      return;
+    }
+
     // Push to Supabase (debounced) so the board is available on other devices.
     scheduleRemoteSave(elements, appState, files);
 
@@ -1080,23 +1091,45 @@ const ExcalidrawWrapper = () => {
             currentBoardId={board?.id ?? null}
             onSelect={async (next) => {
               setBoardPickerOpen(false);
-              if (next.id !== board?.id) {
-                // Persist the current board before switching so edits aren't
-                // lost when the page reloads.
-                if (excalidrawAPI) {
-                  try {
-                    await saveSceneNow(
-                      excalidrawAPI.getSceneElementsIncludingDeleted(),
-                      excalidrawAPI.getAppState(),
-                      excalidrawAPI.getFiles(),
-                    );
-                  } catch (error) {
-                    console.warn("failed to save board before switching", error);
-                  }
-                }
-                openBoard(next);
-                window.location.reload();
+              if (next.id === board?.id) {
+                return;
               }
+
+              // Stop persisting so no stray save lands on the new board.
+              switchingBoardRef.current = true;
+
+              // Persist the current board before switching so edits aren't
+              // lost when the page reloads.
+              if (excalidrawAPI) {
+                try {
+                  await saveSceneNow(
+                    board?.id ?? null,
+                    excalidrawAPI.getSceneElementsIncludingDeleted(),
+                    excalidrawAPI.getAppState(),
+                    excalidrawAPI.getFiles(),
+                  );
+                } catch (error) {
+                  console.warn("failed to save board before switching", error);
+                }
+              }
+              LocalData.flushSave();
+              flushRemoteSave();
+              cancelRemoteSave();
+
+              openBoard(next);
+              window.location.reload();
+            }}
+            onDeleted={(deletedId) => {
+              if (deletedId !== board?.id) {
+                return;
+              }
+              // The current board is gone: drop any pending save and reopen
+              // without a board param so a valid board is selected.
+              switchingBoardRef.current = true;
+              cancelRemoteSave();
+              const url = new URL(window.location.href);
+              url.searchParams.delete("board");
+              window.location.replace(url.toString());
             }}
             onClose={() => setBoardPickerOpen(false)}
           />
