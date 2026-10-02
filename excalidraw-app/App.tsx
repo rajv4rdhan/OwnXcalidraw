@@ -143,6 +143,14 @@ import DebugCanvas, {
 import { useSimulatedCollaborators } from "./debugCollaborators";
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
+import { BoardPicker } from "./boards/BoardPicker";
+import { useCurrentBoard } from "./boards/useCurrentBoard";
+import {
+  flushRemoteSave,
+  loadRemoteScene,
+  scheduleRemoteSave,
+  setCurrentBoardId,
+} from "./data/remoteStore";
 
 import "./index.scss";
 
@@ -217,6 +225,7 @@ const shareableLinkConfirmDialog = {
 const initializeScene = async (opts: {
   collabAPI: CollabAPI | null;
   excalidrawAPI: ExcalidrawImperativeAPI;
+  boardId?: string | null;
 }): Promise<
   { scene: ExcalidrawInitialDataState | null } & (
     | { isExternalScene: true; id: string; key: string }
@@ -232,6 +241,12 @@ const initializeScene = async (opts: {
 
   const localDataState = importFromLocalStorage();
 
+  // The server scene is the source of truth for cross-device sync. Local
+  // storage is only a cache/first-paint fallback.
+  const remoteScene = opts.boardId
+    ? await loadRemoteScene(opts.boardId).catch(() => null)
+    : null;
+
   let scene: Omit<
     RestoredDataState,
     // we're not storing files in the scene database/localStorage, and instead
@@ -240,11 +255,20 @@ const initializeScene = async (opts: {
   > & {
     scrollToContent?: boolean;
   } = {
-    elements: restoreElements(localDataState?.elements, null, {
-      repairBindings: true,
-      deleteInvisibleElements: true,
-    }),
-    appState: restoreAppState(localDataState?.appState, null),
+    elements: restoreElements(
+      remoteScene?.elements?.length
+        ? remoteScene.elements
+        : localDataState?.elements,
+      null,
+      {
+        repairBindings: true,
+        deleteInvisibleElements: true,
+      },
+    ),
+    appState: restoreAppState(
+      remoteScene?.elements?.length ? remoteScene.appState : localDataState?.appState,
+      null,
+    ),
   };
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
@@ -406,6 +430,8 @@ const ExcalidrawWrapper = () => {
   }, []);
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
+  const { board, openBoard } = useCurrentBoard();
+  const [isBoardPickerOpen, setBoardPickerOpen] = useState(false);
   const [collabAPI] = useAtom(collabAPIAtom);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
@@ -561,11 +587,19 @@ const ExcalidrawWrapper = () => {
     if (!excalidrawAPI || (!isCollabDisabled && !collabAPI)) {
       return;
     }
+    // Wait until the current board is resolved so we load the right scene.
+    if (!board) {
+      return;
+    }
 
-    initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
-      loadImages(data, /* isInitialLoad */ true);
-      initialStatePromiseRef.current.promise.resolve(data.scene);
-    });
+    setCurrentBoardId(board.id);
+
+    initializeScene({ collabAPI, excalidrawAPI, boardId: board.id }).then(
+      async (data) => {
+        loadImages(data, /* isInitialLoad */ true);
+        initialStatePromiseRef.current.promise.resolve(data.scene);
+      },
+    );
 
     const onHashChange = async (event: HashChangeEvent) => {
       event.preventDefault();
@@ -579,9 +613,10 @@ const ExcalidrawWrapper = () => {
         }
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
-        initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
-          loadImages(data);
-          if (data.scene) {
+        initializeScene({ collabAPI, excalidrawAPI, boardId: board.id }).then(
+          (data) => {
+            loadImages(data);
+            if (data.scene) {
             excalidrawAPI.updateScene({
               elements: restoreElements(data.scene.elements, null, {
                 repairBindings: true,
@@ -589,8 +624,9 @@ const ExcalidrawWrapper = () => {
               appState: restoreAppState(data.scene.appState, null),
               captureUpdate: CaptureUpdateAction.IMMEDIATELY,
             });
-          }
-        });
+            }
+          },
+        );
       }
     };
 
@@ -655,11 +691,13 @@ const ExcalidrawWrapper = () => {
 
     const onUnload = () => {
       LocalData.flushSave();
+      flushRemoteSave();
     };
 
     const visibilityChange = (event: FocusEvent | Event) => {
       if (event.type === EVENT.BLUR || document.hidden) {
         LocalData.flushSave();
+        flushRemoteSave();
       }
       if (
         event.type === EVENT.VISIBILITY_CHANGE ||
@@ -685,11 +723,19 @@ const ExcalidrawWrapper = () => {
         false,
       );
     };
-  }, [isCollabDisabled, collabAPI, excalidrawAPI, setLangCode, loadImages]);
+  }, [
+    isCollabDisabled,
+    collabAPI,
+    excalidrawAPI,
+    setLangCode,
+    loadImages,
+    board,
+  ]);
 
   useEffect(() => {
     const unloadHandler = (event: BeforeUnloadEvent) => {
       LocalData.flushSave();
+      flushRemoteSave();
 
       if (
         excalidrawAPI &&
@@ -720,6 +766,9 @@ const ExcalidrawWrapper = () => {
     if (collabAPI?.isCollaborating()) {
       collabAPI.syncElements(elements);
     }
+
+    // Push to Supabase (debounced) so the board is available on other devices.
+    scheduleRemoteSave(elements, appState, files);
 
     // this check is redundant, but since this is a hot path, it's best
     // not to evaludate the nested expression every time
@@ -999,6 +1048,14 @@ const ExcalidrawWrapper = () => {
 
           return (
             <div className="excalidraw-ui-top-right">
+              <button
+                className="boards-trigger"
+                onClick={() => setBoardPickerOpen(true)}
+                title={board ? `Board: ${board.name}` : "Boards"}
+              >
+                {board?.name ?? "Boards"}
+              </button>
+
               {excalidrawAPI?.getEditorInterface().formFactor === "desktop" && (
                 <ExcalidrawPlusPromoBanner
                   isSignedIn={isExcalidrawPlusSignedUser}
@@ -1101,6 +1158,20 @@ const ExcalidrawWrapper = () => {
         />
 
         <AppSidebar />
+
+        {isBoardPickerOpen && (
+          <BoardPicker
+            currentBoardId={board?.id ?? null}
+            onSelect={(next) => {
+              setBoardPickerOpen(false);
+              if (next.id !== board?.id) {
+                openBoard(next);
+                window.location.reload();
+              }
+            }}
+            onClose={() => setBoardPickerOpen(false)}
+          />
+        )}
 
         {errorMessage && (
           <ErrorDialog onClose={() => setErrorMessage("")}>

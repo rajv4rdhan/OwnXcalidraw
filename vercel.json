@@ -1,12 +1,9 @@
 {
+  "buildCommand": "yarn build:app",
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://excalidraw.com"
-        },
         {
           "key": "X-Content-Type-Options",
           "value": "nosniff"

@@ -26,7 +26,7 @@ export const uploadFile = async (
   const response = await fetch(signed.uploadUrl, {
     method: "PUT",
     headers: mimeType ? { "Content-Type": mimeType } : {},
-    body: new Blob([buffer]),
+    body: new Blob([buffer.slice()]),
   });
 
   if (!response.ok) {

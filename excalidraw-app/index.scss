@@ -80,6 +80,27 @@
   }
 }
 
+.excalidraw .excalidraw-ui-top-right .boards-trigger {
+  height: var(--lg-button-size);
+  max-width: 12rem;
+  padding: 0 0.75rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: none;
+  border-radius: var(--border-radius-lg);
+  background-color: var(--island-bg-color);
+  box-shadow: 0 0 0 1px var(--color-surface-lowest);
+  color: var(--color-on-surface);
+  font-family: var(--ui-font);
+  font-size: 0.8333rem;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-surface-low);
+  }
+}
+
 .excalidraw-app.is-collaborating {
   [data-testid="clear-canvas-button"] {
     display: none;
