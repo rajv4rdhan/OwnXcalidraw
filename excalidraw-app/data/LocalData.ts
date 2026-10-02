@@ -47,6 +47,7 @@ import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 
 import { FileManager } from "./FileManager";
 import { FileStatusStore } from "./fileStatusStore";
+import { getScopedStorageKeys } from "./localStorage";
 import { Locker } from "./Locker";
 import { updateBrowserStateVersion } from "./tabSync";
 
@@ -137,14 +138,14 @@ const saveDataStateToLocalStorage = (
       _appState.openSidebar = null;
     }
 
+    const { elements: elementsKey, appState: appStateKey } =
+      getScopedStorageKeys(getCurrentBoardId());
+
     localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,
+      elementsKey,
       JSON.stringify(getNonDeletedElements(elements)),
     );
-    localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
-      JSON.stringify(_appState),
-    );
+    localStorage.setItem(appStateKey, JSON.stringify(_appState));
     updateBrowserStateVersion(STORAGE_KEYS.VERSION_DATA_STATE);
     if (localStorageQuotaExceeded) {
       appJotaiStore.set(localStorageQuotaExceededAtom, false);

@@ -16,15 +16,17 @@ import {
   getElementsStorageSize,
   getTotalStorageSize,
 } from "./data/localStorage";
+import { getCurrentBoardId } from "./data/remoteStore";
 
 type StorageSizes = { scene: number; total: number };
 
 const STORAGE_SIZE_TIMEOUT = 500;
 
 const getStorageSizes = debounce((cb: (sizes: StorageSizes) => void) => {
+  const boardId = getCurrentBoardId();
   cb({
-    scene: getElementsStorageSize(),
-    total: getTotalStorageSize(),
+    scene: getElementsStorageSize(boardId),
+    total: getTotalStorageSize(boardId),
   });
 }, STORAGE_SIZE_TIMEOUT);
 

@@ -7,6 +7,7 @@ import {
   listBoards,
   renameBoard,
 } from "../api/boards";
+import { getScopedStorageKeys } from "../data/localStorage";
 
 import type { Board } from "../api/boards";
 
@@ -60,6 +61,10 @@ export const BoardPicker = ({
     setBusy(true);
     try {
       await deleteBoard(board.id);
+      // Drop the per-board local cache too.
+      const { elements, appState } = getScopedStorageKeys(board.id);
+      localStorage.removeItem(elements);
+      localStorage.removeItem(appState);
       setBoards((prev) => prev.filter((b) => b.id !== board.id));
     } finally {
       setBusy(false);

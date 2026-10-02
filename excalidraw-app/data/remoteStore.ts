@@ -90,4 +90,13 @@ export const scheduleRemoteSave = (
 
 export const flushRemoteSave = () => debouncedPush.flush();
 
+/** Awaits an immediate remote save of the current board. */
+export const saveSceneNow = async (
+  elements: readonly ExcalidrawElement[],
+  appState: AppState,
+  files: BinaryFiles,
+) => {
+  await pushScene(elements, appState, files);
+};
+
 export type { FileId };

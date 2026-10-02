@@ -141,6 +141,7 @@ import { useCurrentBoard } from "./boards/useCurrentBoard";
 import {
   flushRemoteSave,
   loadRemoteScene,
+  saveSceneNow,
   scheduleRemoteSave,
   setCurrentBoardId,
 } from "./data/remoteStore";
@@ -229,13 +230,17 @@ const initializeScene = async (opts: {
   );
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
 
-  const localDataState = importFromLocalStorage();
+  const localDataState = importFromLocalStorage(opts.boardId);
 
   // The server scene is the source of truth for cross-device sync. Local
-  // storage is only a cache/first-paint fallback.
+  // storage (scoped per board) is only a fallback when there's no remote
+  // scene, or to recover local edits whose remote save didn't complete.
   const remoteScene = opts.boardId
     ? await loadRemoteScene(opts.boardId).catch(() => null)
     : null;
+  const useRemote =
+    !!remoteScene &&
+    (remoteScene.elements.length > 0 || !localDataState?.elements?.length);
 
   let scene: Omit<
     RestoredDataState,
@@ -246,9 +251,7 @@ const initializeScene = async (opts: {
     scrollToContent?: boolean;
   } = {
     elements: restoreElements(
-      remoteScene?.elements?.length
-        ? remoteScene.elements
-        : localDataState?.elements,
+      useRemote ? remoteScene!.elements : localDataState?.elements,
       null,
       {
         repairBindings: true,
@@ -256,7 +259,7 @@ const initializeScene = async (opts: {
       },
     ),
     appState: restoreAppState(
-      remoteScene?.elements?.length ? remoteScene.appState : localDataState?.appState,
+      useRemote ? remoteScene!.appState : localDataState?.appState,
       null,
     ),
   };
@@ -630,7 +633,7 @@ const ExcalidrawWrapper = () => {
       ) {
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
-          const localDataState = importFromLocalStorage();
+          const localDataState = importFromLocalStorage(board?.id);
           const username = importUsernameFromLocalStorage();
           setLangCode(getPreferredLanguage());
           excalidrawAPI.updateScene({
@@ -1075,9 +1078,22 @@ const ExcalidrawWrapper = () => {
         {isBoardPickerOpen && (
           <BoardPicker
             currentBoardId={board?.id ?? null}
-            onSelect={(next) => {
+            onSelect={async (next) => {
               setBoardPickerOpen(false);
               if (next.id !== board?.id) {
+                // Persist the current board before switching so edits aren't
+                // lost when the page reloads.
+                if (excalidrawAPI) {
+                  try {
+                    await saveSceneNow(
+                      excalidrawAPI.getSceneElementsIncludingDeleted(),
+                      excalidrawAPI.getAppState(),
+                      excalidrawAPI.getFiles(),
+                    );
+                  } catch (error) {
+                    console.warn("failed to save board before switching", error);
+                  }
+                }
                 openBoard(next);
                 window.location.reload();
               }
