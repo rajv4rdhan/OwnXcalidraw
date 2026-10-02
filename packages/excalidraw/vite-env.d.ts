@@ -27,8 +27,6 @@ interface ImportMetaEnv {
   // To enable bounding box for text containers
   VITE_APP_DEBUG_ENABLE_TEXT_CONTAINER_BOUNDING_BOX: string;
 
-  FAST_REFRESH: string;
-
   // MATOMO
   VITE_APP_MATOMO_URL: string;
   VITE_APP_CDN_MATOMO_TRACKER_URL: string;
