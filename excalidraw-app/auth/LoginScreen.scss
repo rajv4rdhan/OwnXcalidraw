@@ -1,62 +1,123 @@
-.private-login {
-  display: flex;
+.excalidraw.private-login {
   align-items: center;
   justify-content: center;
-  height: 100%;
-  width: 100%;
-  background-color: var(--color-surface-lowest);
-  font-family: var(--ui-font);
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: var(--default-bg-color);
 
-  &__card {
+  .private-login__card {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 0.75rem;
+    box-sizing: border-box;
     width: min(22rem, 90vw);
     padding: 2rem;
-    border-radius: 0.75rem;
+    border-radius: var(--border-radius-lg);
     background-color: var(--island-bg-color);
-    box-shadow: 0 0 0 1px var(--color-surface-low), 0 12px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-island);
+    color: var(--text-primary-color);
   }
 
-  &__title {
+  .private-login__badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 0.25rem;
+    border-radius: 50%;
+    background-color: var(--color-surface-primary-container);
+    color: var(--color-on-primary-container);
+  }
+
+  .private-login__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .private-login__title {
     margin: 0;
     font-size: 1.25rem;
+    font-weight: 700;
+    text-align: center;
     color: var(--color-on-surface);
   }
 
-  &__subtitle {
-    margin: 0;
+  .private-login__subtitle {
+    margin: 0 0 0.5rem;
     font-size: 0.875rem;
+    text-align: center;
     color: var(--color-gray-50);
   }
 
-  &__input {
-    height: 2.5rem;
+  .private-login__input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 2.75rem;
     padding: 0 0.75rem;
-    border-radius: 0.5rem;
-    border: 1px solid var(--color-surface-low);
-    background-color: var(--color-surface-lowest);
-    color: var(--color-on-surface);
-    font-size: 0.95rem;
+    border: 1px solid var(--ExcTextField--border);
+    border-radius: var(--border-radius-lg);
+    background-color: var(--ExcTextField--background);
+    color: var(--ExcTextField--color);
+    font-family: var(--ui-font);
+    font-size: 1rem;
+    outline: none;
+    user-select: text;
+
+    &::placeholder {
+      color: var(--color-gray-50);
+    }
+
+    &:hover {
+      border-color: var(--ExcTextField--border-hover);
+    }
+
+    &:focus,
+    &:focus-visible {
+      border-color: var(--ExcTextField--border-active);
+      box-shadow: 0 0 0 1px var(--ExcTextField--border-active);
+    }
+
+    &[aria-invalid="true"] {
+      border-color: var(--color-danger);
+      box-shadow: none;
+    }
   }
 
-  &__error {
+  .private-login__error {
     font-size: 0.8rem;
     color: var(--color-danger);
   }
 
-  &__submit {
-    height: 2.5rem;
+  .private-login__submit {
+    height: 2.75rem;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--border-radius-lg);
     background-color: var(--color-primary);
-    color: #fff;
-    font-size: 0.95rem;
+    color: var(--color-surface-lowest);
+    font-family: var(--ui-font);
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-primary-darker);
+    }
+
+    &:active:not(:disabled) {
+      background-color: var(--color-primary-darkest);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-brand-active);
+      outline-offset: 2px;
+    }
 
     &:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: default;
     }
   }
