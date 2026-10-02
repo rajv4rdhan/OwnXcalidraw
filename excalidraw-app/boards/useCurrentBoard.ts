@@ -1,3 +1,4 @@
+import { isTestEnv } from "@excalidraw/common";
 import { useCallback, useEffect, useState } from "react";
 
 import { createBoard, listBoards } from "../api/boards";
@@ -19,6 +20,12 @@ export const useCurrentBoard = () => {
   }, []);
 
   useEffect(() => {
+    // Tests render the app without a server; skip board resolution there.
+    if (isTestEnv()) {
+      setLoading(false);
+      return;
+    }
+
     const resolve = async () => {
       const urlId = getBoardIdFromUrl();
 

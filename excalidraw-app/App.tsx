@@ -430,7 +430,7 @@ const ExcalidrawWrapper = () => {
   }, []);
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
-  const { board, openBoard } = useCurrentBoard();
+  const { board, loading: boardLoading, openBoard } = useCurrentBoard();
   const [isBoardPickerOpen, setBoardPickerOpen] = useState(false);
   const [collabAPI] = useAtom(collabAPIAtom);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
@@ -587,14 +587,14 @@ const ExcalidrawWrapper = () => {
     if (!excalidrawAPI || (!isCollabDisabled && !collabAPI)) {
       return;
     }
-    // Wait until the current board is resolved so we load the right scene.
-    if (!board) {
+    // Wait until board resolution settles so we load the right scene.
+    if (boardLoading) {
       return;
     }
 
-    setCurrentBoardId(board.id);
+    setCurrentBoardId(board?.id ?? null);
 
-    initializeScene({ collabAPI, excalidrawAPI, boardId: board.id }).then(
+    initializeScene({ collabAPI, excalidrawAPI, boardId: board?.id }).then(
       async (data) => {
         loadImages(data, /* isInitialLoad */ true);
         initialStatePromiseRef.current.promise.resolve(data.scene);
@@ -613,7 +613,7 @@ const ExcalidrawWrapper = () => {
         }
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
-        initializeScene({ collabAPI, excalidrawAPI, boardId: board.id }).then(
+        initializeScene({ collabAPI, excalidrawAPI, boardId: board?.id }).then(
           (data) => {
             loadImages(data);
             if (data.scene) {
@@ -730,6 +730,7 @@ const ExcalidrawWrapper = () => {
     setLangCode,
     loadImages,
     board,
+    boardLoading,
   ]);
 
   useEffect(() => {
