@@ -50,16 +50,19 @@ Variables** (Production, Preview, and Development).
 
 ## 4. Local development
 
-Serverless functions require the Vercel CLI so that `/api` and the Vite app run
-together:
+Runs entirely on your machine — no Vercel account or CLI required. A dev-only
+Vite plugin (`excalidraw-app/vite-plugin-api.mts`) mounts the same `api/`
+handlers in-process, so the SPA and `/api` share one origin and read
+`.env.local` automatically:
 
 ```bash
 corepack yarn install
-corepack yarn dev        # vercel dev — serves the app + /api on one origin
+corepack yarn start      # http://localhost:3001  (app + /api)
 ```
 
-> `yarn start` runs Vite alone and will **not** serve `/api`, so login and
-> storage won't work. Use `yarn dev` for local development.
+> `yarn dev` (`vercel dev`) is optional and only useful for a production-parity
+> check. Production on Vercel uses the `api/` functions directly; the dev plugin
+> never runs there (`apply: "serve"`).
 
 ## 5. How it works
 
