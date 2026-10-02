@@ -10,6 +10,7 @@
  */
 
 import { debounce } from "@excalidraw/common";
+import { getNonDeletedElements } from "@excalidraw/element";
 import { serializeAsJSON } from "@excalidraw/excalidraw/data/json";
 
 import type { ExcalidrawElement, FileId } from "@excalidraw/element/types";
@@ -71,7 +72,12 @@ const pushScene = async (
     return;
   }
   try {
-    const payload = serializeAsJSON(elements, appState, files, "database");
+    const payload = serializeAsJSON(
+      getNonDeletedElements(elements),
+      appState,
+      files,
+      "database",
+    );
     await saveScene(boardId, {
       elements: JSON.parse(payload).elements ?? [],
       appState: JSON.parse(payload).appState ?? {},

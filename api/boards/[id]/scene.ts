@@ -1,5 +1,11 @@
 import { rejectUnauthenticated } from "../../_lib/auth.ts";
-import { getScene, isUuid } from "../../_lib/boards.ts";
+import {
+  collectFileIds,
+  garbageCollectFiles,
+  getScene,
+  isUuid,
+  pruneDeletedElements,
+} from "../../_lib/boards.ts";
 import { getSupabase } from "../../_lib/supabase.ts";
 import { readJsonBody, rejectMethod, sendJson, withErrors } from "../../_lib/http.ts";
 
@@ -26,17 +32,24 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
   }
 
   if (req.method === "GET") {
-    sendJson(res, 200, { scene: await getScene(id) });
+    const scene = await getScene(id);
+    sendJson(res, 200, { scene });
+
+    // Startup sweep: drop files no longer referenced by this board.
+    void garbageCollectFiles(id, collectFileIds(scene?.elements ?? []));
     return;
   }
 
   const body = readJsonBody<SceneBody>(req);
+  // Soft-deleted elements aren't needed after reload, so don't store them.
+  const elements = pruneDeletedElements(body.elements ?? []);
+
   const { data, error } = await getSupabase()
     .from("scenes")
     .upsert(
       {
         board_id: id,
-        elements: body.elements ?? [],
+        elements,
         app_state: body.appState ?? {},
         version: body.version ?? 0,
         updated_at: new Date().toISOString(),
@@ -62,4 +75,7 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     .eq("id", id);
 
   sendJson(res, 200, { scene: data });
+
+  // Drop files that this save left unreferenced.
+  void garbageCollectFiles(id, collectFileIds(elements));
 });
