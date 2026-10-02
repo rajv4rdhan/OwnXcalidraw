@@ -1,6 +1,6 @@
 import { rejectUnauthenticated } from "../../../_lib/auth.ts";
 import { isUuid } from "../../../_lib/boards.ts";
-import { readEnv } from "../../../_lib/env.ts";
+import { readSupabaseEnv } from "../../../_lib/env.ts";
 import { getSupabase } from "../../../_lib/supabase.ts";
 import { rejectMethod, sendJson, withErrors } from "../../../_lib/http.ts";
 
@@ -22,7 +22,7 @@ export default withErrors(async (req: VercelRequest, res: VercelResponse) => {
     return;
   }
 
-  const { bucket } = readEnv();
+  const { bucket } = readSupabaseEnv();
   const storagePath = `boards/${boardId}/${fileId}`;
 
   const { data, error } = await getSupabase()

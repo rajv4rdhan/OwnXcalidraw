@@ -1,3 +1,4 @@
+import { readSupabaseEnv } from "./env.ts";
 import { getSupabase } from "./supabase.ts";
 
 export type Board = {
@@ -85,7 +86,7 @@ export const deleteBoard = async (id: string): Promise<void> => {
 
   if (files?.length) {
     await supabase.storage
-      .from(process.env.SUPABASE_BUCKET!)
+      .from(readSupabaseEnv().bucket)
       .remove(files.map((file) => file.storage_path));
   }
 

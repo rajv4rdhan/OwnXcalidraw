@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-import { readEnv } from "./env.ts";
+import { readAuthEnv } from "./env.ts";
 import { sendJson } from "./http.ts";
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -23,7 +23,7 @@ const sign = (payload: string, secret: string) =>
 
 /** Creates a `payload.signature` session token valid until `expiresAt`. */
 export const createSessionToken = (): string => {
-  const { sessionSecret } = readEnv();
+  const { sessionSecret } = readAuthEnv();
   const expiresAt = Date.now() + SESSION_MAX_AGE_SEC * 1000;
   const payload = Buffer.from(JSON.stringify({ expiresAt })).toString(
     "base64url",
@@ -41,7 +41,7 @@ export const verifySessionToken = (token: string | undefined): boolean => {
     return false;
   }
 
-  const { sessionSecret } = readEnv();
+  const { sessionSecret } = readAuthEnv();
   if (!safeEqual(signature, sign(payload, sessionSecret))) {
     return false;
   }

@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-import { readEnv } from "./env.ts";
+import { readSupabaseEnv } from "./env.ts";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -12,7 +12,7 @@ let client: SupabaseClient | null = null;
  */
 export const getSupabase = (): SupabaseClient => {
   if (!client) {
-    const { supabaseUrl, supabaseSecretKey } = readEnv();
+    const { supabaseUrl, supabaseSecretKey } = readSupabaseEnv();
     client = createClient(supabaseUrl, supabaseSecretKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });

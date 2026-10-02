@@ -1,4 +1,4 @@
-import { readEnv } from "./_lib/env.ts";
+import { readAuthEnv } from "./_lib/env.ts";
 import { safeEqual, setSessionCookie } from "./_lib/auth.ts";
 import { rejectMethod, readJsonBody, sendJson, withErrors } from "./_lib/http.ts";
 import { isRateLimited } from "./_lib/rate-limit.ts";
@@ -24,7 +24,7 @@ export default withErrors((req: VercelRequest, res: VercelResponse) => {
   }
 
   const { password } = readJsonBody<{ password?: string }>(req);
-  if (!password || !safeEqual(password, readEnv().appPassword)) {
+  if (!password || !safeEqual(password, readAuthEnv().appPassword)) {
     sendJson(res, 401, { error: "invalid_password" });
     return;
   }
