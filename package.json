@@ -4,8 +4,7 @@
   "packageManager": "yarn@1.22.22",
   "workspaces": [
     "excalidraw-app",
-    "packages/*",
-    "examples/*"
+    "packages/*"
   ],
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0"
@@ -37,7 +36,6 @@
     "lint-staged": "12.3.7",
     "pepjs": "0.5.3",
     "prettier": "2.6.2",
-    "rewire": "6.0.0",
     "rimraf": "^5.0.0",
     "typescript": "5.9.3",
     "vite": "5.0.12",
@@ -54,8 +52,6 @@
   "homepage": ".",
   "prettier": "@excalidraw/prettier-config",
   "scripts": {
-    "build-node": "node ./scripts/build-node.js",
-    "build:app:docker": "yarn --cwd ./excalidraw-app build:app:docker",
     "build:app": "yarn --cwd ./excalidraw-app build:app",
     "build:common": "yarn --cwd ./packages/common build:esm",
     "build:element": "yarn --cwd ./packages/element build:esm",
@@ -70,7 +66,6 @@
     "start": "yarn --cwd ./excalidraw-app start",
     "dev": "vercel dev",
     "start:production": "yarn --cwd ./excalidraw-app start:production",
-    "start:example": "yarn build:packages && yarn --cwd ./examples/with-script-in-browser start",
     "test:all": "yarn test:typecheck && yarn test:code && yarn test:other && yarn test:app --watch=false",
     "test:app": "vitest",
     "test:code": "eslint --max-warnings=0 --ext .js,.ts,.tsx .",
@@ -93,7 +88,7 @@
     "release:test": "node scripts/release.js --tag=test",
     "release:next": "node scripts/release.js --tag=next",
     "release:latest": "node scripts/release.js --tag=latest",
-    "rm:build": "rimraf --glob excalidraw-app/build excalidraw-app/dist excalidraw-app/dev-dist packages/*/dist packages/*/build examples/*/build examples/*/dist",
+    "rm:build": "rimraf --glob excalidraw-app/build excalidraw-app/dist excalidraw-app/dev-dist packages/*/dist packages/*/build",
     "rm:node_modules": "rimraf --glob node_modules excalidraw-app/node_modules packages/*/node_modules",
     "clean-install": "yarn rm:node_modules && yarn install"
   },
