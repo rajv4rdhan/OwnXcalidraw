@@ -1,7 +1,6 @@
 <a href="https://excalidraw.com/" target="_blank" rel="noopener">
   <picture>
-    <source media="(prefers-color-scheme: dark)" alt="Excalidraw" srcset="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2_dark.png" />
-    <img alt="Excalidraw" src="https://excalidraw.nyc3.cdn.digitaloceanspaces.com/github/excalidraw_github_cover_2.png" />
+    <img alt="Excalidraw" src="https://res.cloudinary.com/du06umyos/image/upload/v1791035450/Gemini_Generated_Image_pg8kp6pg8kp6pg8k_ramqhc.png" />
   </picture>
 </a>
 
